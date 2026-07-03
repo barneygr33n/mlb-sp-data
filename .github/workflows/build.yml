@@ -15,6 +15,12 @@ jobs:
       - name: Run SP data builder
         run: python3 build_sp_data.py
 
+      - name: Install numpy for regression
+        run: pip install numpy
+
+      - name: Run game-specific SP regression
+        run: python3 run_regression.py
+
       - name: Commit and push if changed
         run: |
           git config user.name "sp-data-bot"
