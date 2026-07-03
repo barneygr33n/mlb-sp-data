@@ -67,7 +67,11 @@ def main():
             rows.append(row)
     print(f"  {len(rows)} games matched to opening totals")
 
-    # Filter to rows with complete SP stats
+    # Filter to rows with complete SP stats AND a minimum sample of starts —
+    # unfiltered includes spot-starters/rookies with a handful of innings,
+    # whose season ERA is extremely noisy and likely drags down R² artificially.
+    MIN_GS = 5
+    dropped_small_sample = 0
     clean = []
     for r in rows:
         h_era = to_float(r["home_sp_era"])
@@ -76,8 +80,13 @@ def main():
         a_xfip = to_float(r["away_sp_xfip"])
         h_siera = to_float(r["home_sp_siera"])
         a_siera = to_float(r["away_sp_siera"])
+        h_gs = to_float(r["home_sp_gs"])
+        a_gs = to_float(r["away_sp_gs"])
         park = PARK_FACTORS.get(r["home"], 1.0)
         if None in (h_era, a_era):
+            continue
+        if (h_gs is not None and h_gs < MIN_GS) or (a_gs is not None and a_gs < MIN_GS):
+            dropped_small_sample += 1
             continue
         clean.append({
             "opening_total": r["opening_total"],
@@ -86,7 +95,8 @@ def main():
             "home_siera": h_siera, "away_siera": a_siera,
             "park": park,
         })
-    print(f"  {len(clean)} games with complete game-specific SP ERA")
+    print(f"  {len(clean)} games with complete game-specific SP ERA (min {MIN_GS} GS)")
+    print(f"  {dropped_small_sample} games dropped for small-sample SP (<{MIN_GS} GS that season)")
 
     y = np.array([c["opening_total"] for c in clean])
 
